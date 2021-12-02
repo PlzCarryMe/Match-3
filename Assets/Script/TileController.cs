@@ -4,20 +4,13 @@ using UnityEngine;
 
 public class TileController : MonoBehaviour
 {
-    public int id;
-
     private BoardManager board;
-    private SpriteRenderer render;
     private GameFlowManager game;
+    private SpriteRenderer render;
+    private bool isSelected = false;
 
     private static readonly Color selectedColor = new Color(0.5f, 0.5f, 0.5f);
     private static readonly Color normalColor = Color.white;
-
-    private static TileController previousSelected = null;
-    private bool isSelected = false;
-
-    private static readonly Vector2[] adjacentDirection = new Vector2[] { Vector2.up, Vector2.down, Vector2.left, Vector2.right };
-    
 
     private static readonly float moveDuration = 0.5f;
     private static readonly float destroyBigDuration = 0.1f;
@@ -26,50 +19,31 @@ public class TileController : MonoBehaviour
     private static readonly Vector2 sizeBig = Vector2.one * 1.2f;
     private static readonly Vector2 sizeSmall = Vector2.zero;
     private static readonly Vector2 sizeNormal = Vector2.one;
-    
+
+    private static readonly Vector2[] adjacentDirection = new Vector2[] { Vector2.up, Vector2.down, Vector2.left, Vector2.right };
+
+    private static TileController previousSelected = null;
+
+    public int id;
+
     public bool IsDestroyed { get; private set; }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        board.IsProcessing = false;
-        board.IsSwapping = false;
-        IsDestroyed = false;
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 
     private void Awake()
     {
         board = BoardManager.Instance;
-        render = GetComponent<SpriteRenderer>();
         game = GameFlowManager.Instance;
+        render = GetComponent<SpriteRenderer>();
     }
 
-    public void ChangeId(int id, int x, int y)
+    // Start is called before the first frame update
+    void Start()
     {
-        render.sprite = board.tileTypes[id];
-        this.id = id;
-
-        name = "TILE_" + id + " (" + x + ", " + y + ")";
+        IsDestroyed = false;
     }
-
-    private void Select()
+    // Update is called once per frame
+    void Update()
     {
-        isSelected = true;
-        render.color = selectedColor;
-        previousSelected = this;
-    }
-
-    private void Deselect()
-    {
-        isSelected = false;
-        render.color = normalColor;
-        previousSelected = null;
+    
     }
 
     private void OnMouseDown()
@@ -79,6 +53,7 @@ public class TileController : MonoBehaviour
         {
             return;
         }
+
         SoundManager.Instance.PlayTap();
 
         // Already selected this tile?
@@ -96,7 +71,7 @@ public class TileController : MonoBehaviour
 
             else
             {
-                // is this an adjacent tile?
+                // is this an adjacent tiles?
                 if (GetAllAdjacentTiles().Contains(previousSelected))
                 {
                     TileController otherTile = previousSelected;
@@ -125,6 +100,34 @@ public class TileController : MonoBehaviour
         }
     }
 
+    public void ChangeId(int id, int x, int y)
+    {
+        render.sprite = board.tileTypes[id];
+        this.id = id;
+
+        name = "TILE_" + id + " (" + x + ", " + y + ")";
+    }
+
+    #region Select & Deselect
+
+    private void Select()
+    {
+        isSelected = true;
+        render.color = selectedColor;
+        previousSelected = this;
+    }
+
+    private void Deselect()
+    {
+        isSelected = false;
+        render.color = normalColor;
+        previousSelected = null;
+    }
+
+    #endregion
+
+    #region Swapping & Moving
+
     public void SwapTile(TileController otherTile, System.Action onCompleted = null)
     {
         StartCoroutine(board.SwapTilePosition(this, otherTile, onCompleted));
@@ -151,6 +154,10 @@ public class TileController : MonoBehaviour
         onCompleted?.Invoke();
     }
 
+    #endregion
+
+    #region Adjacent
+
     private TileController GetAdjacent(Vector2 castDir)
     {
         RaycastHit2D hit = Physics2D.Raycast(transform.position, castDir, render.size.x);
@@ -174,6 +181,10 @@ public class TileController : MonoBehaviour
 
         return adjacentTiles;
     }
+
+    #endregion
+
+    #region Check Match
 
     private List<TileController> GetMatch(Vector2 castDir)
     {
@@ -245,6 +256,10 @@ public class TileController : MonoBehaviour
         return matchingTiles;
     }
 
+    #endregion
+
+    #region Destroy & Generate
+
     public IEnumerator SetDestroyed(System.Action onCompleted)
     {
         IsDestroyed = true;
@@ -290,5 +305,5 @@ public class TileController : MonoBehaviour
         ChangeId(Random.Range(0, board.tileTypes.Count), x, y);
     }
 
-
+    #endregion
 }
